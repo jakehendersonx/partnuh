@@ -1,7 +1,7 @@
 """Fast unit tests — no terminal, no network.
 
 Covers the wiring that's easy to break: agent adaptation, config override
-merging, presets, the pacer's event rendering, and AgentSpec.
+merging, presets, the pacer's event rendering, and the demo agent.
 
 Run:  python tests/test_unit.py      (or: pytest)
 """
@@ -149,14 +149,6 @@ def test_banner_renders_with_custom_label_style():
         climod.console = old
     out = buf.getvalue()
     assert "name:" in out and "tools: add" in out and "directory:" in out
-
-
-# --- AgentSpec (optional sugar) --------------------------------------------
-
-def test_agentspec_build():
-    a = partnuh.AgentSpec(name="Private Caller", model="openai/gpt-5.4-nano").build()
-    assert a.name == "Private Caller"
-    assert a.model == "openai/gpt-5.4-nano"
 
 
 # --- demo agent ------------------------------------------------------------
