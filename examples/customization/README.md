@@ -1,7 +1,7 @@
-# custom_agent
+# customization
 
-The same smolagents agent as `basic_agent`, but with **every look-&-feel knob
-customized** — a quick tour of how to theme a partnuh CLI.
+The same smolagents agent as [`quickstart`](../quickstart), but with **every
+look-&-feel knob customized** — a quick tour of how to theme a partnuh CLI.
 
 It shows partnuh's two simple objects:
 
@@ -22,7 +22,7 @@ equivalent string works too.
 ## Setup
 
 ```bash
-cd examples/custom_agent
+cd examples/customization
 
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
@@ -42,5 +42,4 @@ banner box, a magenta `thinking…` spinner, `━` separators, and green
 `→ calling` / `✓` tool markers.
 
 See `main.py` for the full annotated `CliConfig`. To learn every available
-field, read `CliConfig` in the partnuh source (or the root README's
-"Configuring the look & feel" section).
+field, read `CliConfig` in the partnuh source.

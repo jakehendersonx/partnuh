@@ -20,7 +20,7 @@ def _fake(prompt, session_id):
         yield TextDelta(word)
 
 
-def _drive(config, keystrokes="hi\rmore\r/quit\r"):
+def _drive(config, keystrokes="hi\r/clear\rmore\r/quit\r"):
     """Run an interactive session to completion against piped keystrokes."""
     with create_pipe_input() as inp:
         inp.send_text(keystrokes)

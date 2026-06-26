@@ -1,4 +1,4 @@
-"""Basic partnuh example — a smolagents agent in a streaming terminal CLI.
+"""Quickstart — a smolagents agent in a streaming terminal CLI.
 
 partnuh is just the aesthetic layer. You build your agent the normal smolagents
 way, then hand it to partnuh.wrap(). See README.md for setup.
