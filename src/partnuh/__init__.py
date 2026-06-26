@@ -25,7 +25,7 @@ from .events import Done, Error, Event, TextDelta, ToolCallStarted, ToolResult, 
 from .presets import Box, Cursor, Prompt, Separator, Spinner
 from .protocol import CliAgent, ToolInfo
 
-__version__ = "0.0.4"
+__version__ = "0.1.0"
 
 __all__ = [
     "CliAgent",
