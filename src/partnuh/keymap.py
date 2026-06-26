@@ -14,11 +14,15 @@ newline), so it needs no special binding.
 
 from __future__ import annotations
 
+from typing import Sequence
+
 from prompt_toolkit.application.current import get_app
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.input.ansi_escape_sequences import ANSI_SEQUENCES
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
+
+DEFAULT_NEWLINE_KEYS = ("s-enter", "c-enter", "a-enter", "c-j")
 
 # Known Shift+Enter encodings -> treat as Control-J (newline insert).
 SHIFT_ENTER_SEQUENCES = (
@@ -33,7 +37,7 @@ def register_shift_enter() -> None:
         ANSI_SEQUENCES[seq] = Keys.ControlJ
 
 
-def build_key_bindings() -> KeyBindings:
+def build_key_bindings(newline_keys: Sequence[str] = DEFAULT_NEWLINE_KEYS) -> KeyBindings:
     register_shift_enter()
     kb = KeyBindings()
     menu_visible = Condition(lambda: get_app().current_buffer.complete_state is not None)
@@ -68,8 +72,9 @@ def build_key_bindings() -> KeyBindings:
     def _(event):
         event.current_buffer.complete_previous()
 
-    # Shift / Ctrl / Alt-Enter and Control-J all insert a newline.
-    for key in ("s-enter", "c-enter", "a-enter", "c-j"):
+    # Configured newline keys all insert a newline (default: Shift/Ctrl/Alt-Enter
+    # and Control-J, which is what the Shift+Enter sequences map to).
+    for key in newline_keys:
         try:
             @kb.add(key)
             def _(event):

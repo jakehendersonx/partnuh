@@ -1,7 +1,7 @@
 """Basic partnuh example — a smolagents agent in a streaming terminal CLI.
 
 partnuh is just the aesthetic layer. You build your agent the normal smolagents
-way, then hand it to partnuh.run(). See README.md for setup.
+way, then hand it to partnuh.wrap(). See README.md for setup.
 """
 
 import os
@@ -35,6 +35,6 @@ model = OpenAIServerModel(
 agent = ToolCallingAgent(tools=[add], model=model, stream_outputs=True, max_steps=4)
 
 
-# Hand it to partnuh — wrap it in a CLI, then run the streaming REPL.
+# Hand it to partnuh — one line, you get the whole streaming CLI.
 if __name__ == "__main__":
-    partnuh.wrap(agent, name="Basic Agent").run()
+    partnuh.wrap(agent, name="Basic Agent")

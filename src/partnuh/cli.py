@@ -16,6 +16,7 @@ from typing import Callable, Dict, List, Optional
 from rich.console import Console
 
 from prompt_toolkit.completion import FuzzyCompleter, NestedCompleter
+from prompt_toolkit.cursor_shapes import CursorShape
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.styles import Style
@@ -133,11 +134,19 @@ def display_banner(agent: CliAgent) -> None:
 
 
 def stream_response(agent: CliAgent, prompt: str, session_id: str, config: CliConfig) -> None:
-    pacer = Pacer(console, stream_speed=config.stream_speed, show_tool_calls=config.show_tool_calls)
+    pacer = Pacer(
+        console,
+        delay=config.resolved_token_delay(),
+        show_tool_calls=config.show_tool_calls,
+        tool_call_prefix=config.tool_call_prefix,
+        tool_result_prefix=config.tool_result_prefix,
+        tool_style=config.tool_style,
+    )
     try:
         events = agent.stream(prompt, session_id)
         first = None
-        with console.status("[blue]Thinking...[/blue]", spinner="dots", spinner_style="dim"):
+        status = f"[{config.spinner_style}]{config.spinner_text}[/{config.spinner_style}]"
+        with console.status(status, spinner=config.spinner, spinner_style=config.spinner_style):
             for ev in events:
                 first = ev
                 break
@@ -155,6 +164,16 @@ def stream_response(agent: CliAgent, prompt: str, session_id: str, config: CliCo
 # The wrapped CLI
 # ---------------------------------------------------------------------------
 
+_CURSOR_SHAPES = {
+    "block": CursorShape.BLOCK,
+    "beam": CursorShape.BEAM,
+    "underline": CursorShape.UNDERLINE,
+    "blinking-block": CursorShape.BLINKING_BLOCK,
+    "blinking-beam": CursorShape.BLINKING_BEAM,
+    "blinking-underline": CursorShape.BLINKING_UNDERLINE,
+}
+
+
 def _interactive(agent, config: CliConfig, session_id: str) -> None:
     """The REPL loop. `agent` is assumed already adapted to a CliAgent."""
     dispatcher = CommandDispatcher(agent, config, session_id)
@@ -168,10 +187,11 @@ def _interactive(agent, config: CliConfig, session_id: str) -> None:
     except AttributeError:
         completer = FuzzyCompleter(NestedCompleter(dispatcher.completions()))
 
-    style = Style.from_dict({"prompt": "fg:#888888"})
+    style = Style.from_dict({"prompt": config.prompt_style})
     prompt_tokens = [("class:prompt", config.prompt_str)]
-    kb = build_key_bindings()
-    session = PromptSession(style=style, completer=completer, key_bindings=kb)
+    kb = build_key_bindings(config.newline_keys)
+    cursor = _CURSOR_SHAPES.get(config.cursor_shape) if config.cursor_shape else None
+    session = PromptSession(style=style, completer=completer, key_bindings=kb, cursor=cursor)
 
     try:
         while True:
@@ -195,23 +215,30 @@ def _interactive(agent, config: CliConfig, session_id: str) -> None:
             if result.handled and not result.should_process:
                 continue
             if result.should_process:
-                width = shutil.get_terminal_size(fallback=(80, 20)).columns
-                rule = "[dim]" + "-" * min(width, 120) + "[/dim]"
-                console.print(rule)
-                stream_response(agent, text, session_id, config)
-                console.print(rule)
+                if config.show_dividers:
+                    width = shutil.get_terminal_size(fallback=(80, 20)).columns
+                    rule = "[dim]" + "-" * min(width, 120) + "[/dim]"
+                    console.print(rule)
+                    stream_response(agent, text, session_id, config)
+                    console.print(rule)
+                else:
+                    stream_response(agent, text, session_id, config)
     except KeyboardInterrupt:
         pass
 
 
 class Cli:
-    """A partnuh CLI wrapped around an agent. Configure it, then `.run()`.
+    """A partnuh CLI wrapped around an agent.
 
-        partnuh.wrap(agent).run()
-        partnuh.wrap(agent, prompt_str="❯ ", stream_speed=0.3).run()
+    Most of the time you don't build this directly — `partnuh.wrap(agent)` does
+    it and launches. Construct a Cli yourself when you want the object without
+    launching (e.g. to embed or test), then call `.start()`.
 
-    `wrap()` accepts a `config=CliConfig(...)` and/or individual CliConfig
-    overrides as keyword args (e.g. prompt_str=, stream_speed=, banner=).
+        cli = partnuh.Cli(agent, prompt_str="❯ ", stream_speed=0.3)
+        cli.start()
+
+    Accepts a `config=CliConfig(...)` and/or individual CliConfig fields as
+    keyword overrides.
     """
 
     def __init__(self, agent, *, name: Optional[str] = None, model: Optional[str] = None,
@@ -220,57 +247,45 @@ class Cli:
         base = config or CliConfig()
         self.config = replace(base, **overrides) if overrides else base
 
-    def run_interactive(self, session_id: str = "main_session") -> "Cli":
+    def interactive(self, session_id: str = "main_session") -> "Cli":
         _interactive(self.agent, self.config, session_id)
         return self
 
-    def run_once(self, prompt: str, session_id: str = "main_session") -> "Cli":
+    def once(self, prompt: str, session_id: str = "main_session") -> "Cli":
         stream_response(self.agent, prompt, session_id, self.config)
         return self
 
-    def run(self, args: Optional[List[str]] = None, prompt: Optional[str] = None,
-            session_id: str = "main_session") -> "Cli":
-        """One-shot if `prompt`/`args` given, else interactive."""
+    def start(self, args: Optional[List[str]] = None, prompt: Optional[str] = None,
+              session_id: str = "main_session") -> "Cli":
+        """Launch: one-shot if `prompt`/`args` given, else interactive."""
         if args is None:
             args = sys.argv[1:]
         try:
             if prompt is not None:
-                self.run_once(prompt, session_id)
+                self.once(prompt, session_id)
             elif args:
-                self.run_once(" ".join(args), session_id)
+                self.once(" ".join(args), session_id)
             else:
-                self.run_interactive(session_id)
+                self.interactive(session_id)
         except KeyboardInterrupt:
             sys.exit(130)
         return self
 
 
 def wrap(agent, *, name: Optional[str] = None, model: Optional[str] = None,
-         config: Optional[CliConfig] = None, **overrides) -> Cli:
-    """Wrap any agent in a partnuh CLI. Returns a Cli; call `.run()` to launch.
+         config: Optional[CliConfig] = None, args: Optional[List[str]] = None,
+         prompt: Optional[str] = None, **overrides) -> Cli:
+    """Wrap any agent in a partnuh CLI and launch it. One line, done.
+
+        partnuh.wrap(agent)                                  # interactive REPL
+        partnuh.wrap(agent, name="Private Caller")           # labelled banner
+        partnuh.wrap(agent, prompt_str="❯ ", stream_speed=0.3)
 
     The agent is auto-wrapped (an existing CliAgent, a smolagents agent, or a
-    stream function). Pass `name`/`model` to label the banner, and any CliConfig
-    fields as keyword overrides.
+    stream function). One-shot if a `prompt` (or command-line args) is present,
+    otherwise an interactive REPL. Any CliConfig field can be passed as a keyword
+    override. Returns the Cli once it exits.
     """
-    return Cli(agent, name=name, model=model, config=config, **overrides)
-
-
-# ---------------------------------------------------------------------------
-# Module-level convenience (thin delegators over Cli)
-# ---------------------------------------------------------------------------
-
-def run(agent, config: Optional[CliConfig] = None, args: Optional[List[str]] = None, prompt: Optional[str] = None,
-        name: Optional[str] = None, model: Optional[str] = None) -> None:
-    """Shorthand for `wrap(agent, ...).run(...)`."""
-    Cli(agent, name=name, model=model, config=config).run(args=args, prompt=prompt)
-
-
-def run_once(agent, prompt: str, session_id: str = "main_session", config: Optional[CliConfig] = None,
-             name: Optional[str] = None, model: Optional[str] = None) -> None:
-    Cli(agent, name=name, model=model, config=config).run_once(prompt, session_id)
-
-
-def run_interactive(agent, session_id: str = "main_session", config: Optional[CliConfig] = None,
-                    name: Optional[str] = None, model: Optional[str] = None) -> None:
-    Cli(agent, name=name, model=model, config=config).run_interactive(session_id)
+    cli = Cli(agent, name=name, model=model, config=config, **overrides)
+    cli.start(args=args, prompt=prompt)
+    return cli

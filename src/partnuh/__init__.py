@@ -16,13 +16,13 @@ from __future__ import annotations
 
 from .adapt import adapt
 from .adapters import from_callable, from_openai, from_smolagents
-from .cli import Cli, run, run_interactive, run_once, wrap
+from .cli import Cli, wrap
 from .config import CliConfig
 from .events import Done, Error, Event, TextDelta, ToolCallStarted, ToolResult, normalize
 from .protocol import CliAgent, ToolInfo
 from .spec import AgentSpec
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 __all__ = [
     "AgentSpec",
@@ -38,9 +38,6 @@ __all__ = [
     "normalize",
     "wrap",
     "Cli",
-    "run",
-    "run_interactive",
-    "run_once",
     "adapt",
     "from_openai",
     "from_smolagents",

@@ -4,7 +4,7 @@
 
 `partnuh` is purely aesthetic: it's the fast, multi-line, token-streaming
 terminal REPL. You build your agent with its own dependencies — smolagents, an
-OpenAI-compatible chat model, anything — and hand it to `partnuh.run()`, which
+OpenAI-compatible chat model, anything — and hand it to `partnuh.wrap()`, which
 auto-wraps it. partnuh never builds agents and imports no framework of its own.
 
 ```python
@@ -12,7 +12,7 @@ import partnuh
 from smolagents import ToolCallingAgent, OpenAIServerModel
 
 agent = ToolCallingAgent(tools=[...], model=OpenAIServerModel(...))  # your agent
-partnuh.wrap(agent, name="Private Caller").run()                     # one line → a full CLI
+partnuh.wrap(agent, name="Private Caller")                           # one line → a full CLI
 ```
 
 ## Run the example locally (from a checkout)
@@ -44,7 +44,7 @@ pip install "partnuh[all]"
 
 ## Use
 
-**Bring your own agent.** Build it however you like, then `partnuh.run()` it.
+**Bring your own agent, then `wrap()` it — one line, you get the whole CLI.**
 What you pass is auto-wrapped: an already-`CliAgent`, a smolagents agent, or a
 plain stream function all just work.
 
@@ -62,17 +62,18 @@ model = OpenAIServerModel(model_id="openai/gpt-5.4-nano",
                           api_key=os.environ["OPENROUTER_API_KEY"])
 agent = ToolCallingAgent(tools=[add], model=model, stream_outputs=True)
 
-partnuh.wrap(agent, name="Private Caller").run()   # auto-wrapped; no partnuh agent type to learn
+partnuh.wrap(agent, name="Private Caller")   # auto-wrapped + launched; that's it
 ```
 
-`wrap()` returns a configurable `Cli`; `.run()` launches it. Configure it with
-`CliConfig` fields as keyword overrides:
+`wrap()` launches an interactive REPL (or runs one-shot if a `prompt`/CLI args
+are present). Tune the look with any `CliConfig` field as a keyword override:
 
 ```python
-partnuh.wrap(agent, name="Private Caller", prompt_str="❯ ", stream_speed=0.3).run()
+partnuh.wrap(agent, name="Private Caller", prompt_str="❯ ", stream_speed=0.3)
 ```
 
-(`partnuh.run(agent, ...)` is shorthand for `wrap(agent, ...).run()`.)
+Want the object without launching (to embed or test)? Use `partnuh.Cli(...)` and
+call `.start()` yourself.
 
 **Anything is an agent** — a generator function is enough (no key, no framework):
 
@@ -84,7 +85,7 @@ def echo(prompt, session_id):
     for word in f"you said: {prompt}".split(" "):
         yield TextDelta(word + " ")
 
-partnuh.wrap(echo, name="Echo").run()
+partnuh.wrap(echo, name="Echo")
 ```
 
 **Optional sugar:** for the no-framework chat case there's `AgentSpec`, a thin
@@ -93,7 +94,7 @@ doesn't need it.
 
 ```python
 agent = partnuh.AgentSpec(name="Private Caller", model="openai/gpt-5.4-nano").build()
-partnuh.wrap(agent).run()
+partnuh.wrap(agent)
 ```
 
 ## In the REPL
@@ -102,17 +103,33 @@ partnuh.wrap(agent).run()
   — see below). Backspace on a blank line joins back to the previous line.
 - `/tools` list tools · `/reset` clear history · `/help` · `/quit`
 
-## Configuring behavior
+## Configuring the look & feel
+
+Every appearance knob lives on `CliConfig`. Pass individual fields straight to
+`wrap()` (they override the defaults), or build a whole `CliConfig`:
 
 ```python
-from partnuh import CliConfig
-
-partnuh.run(agent, config=CliConfig(
-    stream_speed=0.0,      # 0 = as-fast-as-tokens-arrive; 1.0 = slow typewriter
-    show_tool_calls=True,  # render the tool-call markers
-    banner=True,
+partnuh.wrap(
+    agent,
+    name="Private Caller",
+    # prompt & appearance
+    prompt_str="❯ ",            # the leading character(s)            (default "▌ ")
+    prompt_style="fg:#888888",  # prompt_toolkit style for the prompt
+    cursor_shape="beam",        # block | beam | underline | blinking-* | None
+    banner=True,                # startup info panel
+    show_dividers=True,         # dashed rule around each response
+    # input
+    newline_keys=("s-enter", "c-enter", "a-enter", "c-j"),  # keys that insert a newline
+    # streaming
+    stream_speed=0.0,           # 0 = as-fast-as-tokens-arrive; 1.0 = slow typewriter
+    token_delay=None,           # explicit seconds/char; overrides stream_speed when set
+    # spinner (until the first token)
+    spinner="dots", spinner_text="Thinking...", spinner_style="dim",
+    # tool-call markers
+    show_tool_calls=True, tool_call_prefix="⚙ ", tool_result_prefix="→ ", tool_style="dim",
+    # extra slash commands
     commands={"clear": lambda d, args: __import__("os").system("clear")},
-))
+)
 ```
 
 ## How it works (ports & adapters)

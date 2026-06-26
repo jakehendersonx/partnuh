@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import sys
 import time
-from typing import Any, Iterable, Optional, Union
+from typing import Iterable, Optional, Union
+
+from rich.text import Text
 
 from .events import (
     Done,
@@ -16,9 +18,6 @@ from .events import (
     normalize,
 )
 
-# Seconds-per-character at stream_speed = 1.0 (slowest typewriter).
-MAX_DELAY = 0.04
-
 
 def _fmt_args(args: Optional[dict]) -> str:
     if not args:
@@ -29,15 +28,26 @@ def _fmt_args(args: Optional[dict]) -> str:
 class Pacer:
     """Consume an iterator of Events (or strings) and write to the terminal.
 
-    stream_speed in [0.0, 1.0]: 0.0 flushes text as received; higher values
+    `delay` is seconds-per-character: 0 flushes text as received; higher values
     drip characters out at a steady rate (a typewriter feel that also smooths
     bursty chunks).
     """
 
-    def __init__(self, console, stream_speed: float = 0.0, show_tool_calls: bool = True):
+    def __init__(
+        self,
+        console,
+        delay: float = 0.0,
+        show_tool_calls: bool = True,
+        tool_call_prefix: str = "⚙ ",
+        tool_result_prefix: str = "→ ",
+        tool_style: str = "dim",
+    ):
         self.console = console
-        self.delay = max(0.0, min(1.0, stream_speed)) * MAX_DELAY
+        self.delay = max(0.0, delay)
         self.show_tool_calls = show_tool_calls
+        self.tool_call_prefix = tool_call_prefix
+        self.tool_result_prefix = tool_result_prefix
+        self.tool_style = tool_style
 
     def _write_text(self, text: str) -> None:
         if self.delay <= 0:
@@ -52,6 +62,7 @@ class Pacer:
     def render(self, events: Iterable[Union[Event, str]]) -> bool:
         """Render the stream. Returns True if any text was printed."""
         printed = False
+        st = self.tool_style
         for raw in events:
             ev = normalize(raw)
             if isinstance(ev, TextDelta):
@@ -60,15 +71,17 @@ class Pacer:
                     self._write_text(ev.text)
             elif isinstance(ev, ToolCallStarted):
                 if self.show_tool_calls:
-                    self.console.print(f"[dim]⚙ {ev.name}({_fmt_args(ev.args)})[/dim]")
+                    # Text (not markup) so prefixes/args containing [..] don't get
+                    # parsed as rich tags.
+                    self.console.print(Text(f"{self.tool_call_prefix}{ev.name}({_fmt_args(ev.args)})", style=st))
             elif isinstance(ev, ToolResult):
                 if self.show_tool_calls:
                     out = str(ev.output)
                     if len(out) > 200:
                         out = out[:200] + "…"
-                    self.console.print(f"[dim]→ {out}[/dim]")
+                    self.console.print(Text(f"{self.tool_result_prefix}{out}", style=st))
             elif isinstance(ev, Error):
-                self.console.print(f"\n[red]Error: {ev.message}[/red]")
+                self.console.print(Text(f"\nError: {ev.message}", style="red"))
             elif isinstance(ev, Done):
                 pass
         return printed

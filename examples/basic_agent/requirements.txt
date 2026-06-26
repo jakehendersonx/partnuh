@@ -1,4 +1,8 @@
-partnuh>=0.0.3
+# Installs partnuh from this repo (editable) so the example tracks local
+# changes. Run `pip install -r requirements.txt` from THIS directory.
+# Once the matching partnuh is published, swap this line for: partnuh>=0.0.4
+-e ../..
+
 smolagents>=1.20.0
 openai>=1.59.0
 python-dotenv>=1.0.0

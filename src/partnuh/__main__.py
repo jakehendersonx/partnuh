@@ -30,11 +30,11 @@ def main() -> None:
         sys.exit(1)
 
     from .spec import AgentSpec
-    from .cli import run
+    from .cli import wrap
 
     model = os.environ.get("PARTNUH_MODEL", "openai/gpt-5.4-nano")
     agent = AgentSpec(name="partnuh", model=model, backend="openrouter").build()
-    run(agent)
+    wrap(agent)
 
 
 if __name__ == "__main__":
