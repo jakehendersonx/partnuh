@@ -218,9 +218,9 @@ def _interactive(agent, config: CliConfig, session_id: str) -> None:
         completer = FuzzyCompleter(NestedCompleter(dispatcher.completions()))
 
     style = Style.from_dict({"prompt": config.prompt_style})
-    prompt_tokens = [("class:prompt", config.prompt_str)]
+    prompt_tokens = [("class:prompt", config.prompt_sequence)]
     kb = build_key_bindings(config.newline_keys)
-    cursor = _CURSOR_SHAPES.get(config.cursor_shape) if config.cursor_shape else None
+    cursor = _CURSOR_SHAPES.get(config.cursor) if config.cursor else None
     session = PromptSession(style=style, completer=completer, key_bindings=kb, cursor=cursor)
 
     try:
@@ -262,7 +262,7 @@ class Cli:
     it and launches. Construct a Cli yourself when you want the object without
     launching (e.g. to embed or test), then call `.start()`.
 
-        cli = partnuh.Cli(agent, prompt_str="❯ ", stream_speed=0.3)
+        cli = partnuh.Cli(agent, prompt_sequence="❯ ", stream_speed=0.3)
         cli.start()
 
     Accepts a `config=CliConfig(...)` and/or individual CliConfig fields as
@@ -307,7 +307,7 @@ def wrap(agent, *, name: Optional[str] = None, model: Optional[str] = None,
 
         partnuh.wrap(agent)                                  # interactive REPL
         partnuh.wrap(agent, name="Private Caller")           # labelled banner
-        partnuh.wrap(agent, prompt_str="❯ ", stream_speed=0.3)
+        partnuh.wrap(agent, prompt_sequence="❯ ", stream_speed=0.3)
 
     The agent is auto-wrapped (an existing CliAgent, a smolagents agent, or a
     stream function). One-shot if a `prompt` (or command-line args) is present,
