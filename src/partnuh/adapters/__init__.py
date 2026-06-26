@@ -1,7 +1,7 @@
 """Adapters bridge concrete agent frameworks to the CliAgent protocol.
 
-Imports are lazy so partnuh has no hard dependency on any one framework:
-install only the extras you use (`partnuh[openai]`, `partnuh[smolagents]`).
+The smolagents import is lazy, so partnuh has no hard dependency on it: install
+it with `partnuh[smolagents]` (or bring your own via from_callable).
 """
 
 from __future__ import annotations
@@ -10,13 +10,6 @@ from typing import Callable, Iterator, Optional, Sequence, Union
 
 from ..events import Event
 from ..protocol import ToolInfo
-
-
-def from_openai(**kwargs):
-    """Build a chat CliAgent over the OpenAI SDK (set base_url for OpenRouter)."""
-    from .openai_adapter import from_openai as _impl
-
-    return _impl(**kwargs)
 
 
 def from_smolagents(agent, *, name: str, model: Optional[str] = None, reset_each_turn: bool = False):
@@ -47,4 +40,4 @@ def from_callable(
     return _CallableAgent()
 
 
-__all__ = ["from_openai", "from_smolagents", "from_callable"]
+__all__ = ["from_smolagents", "from_callable"]

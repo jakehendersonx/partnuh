@@ -17,19 +17,17 @@ with no model or network.
 from __future__ import annotations
 
 from .adapt import adapt
-from .adapters import from_callable, from_openai, from_smolagents
+from .adapters import from_callable, from_smolagents
 from .cli import Cli, wrap
 from .demo import demo_agent
 from .config import CliConfig
 from .events import Done, Error, Event, TextDelta, ToolCallStarted, ToolResult, normalize
 from .presets import Box, Cursor, Prompt, Separator, Spinner
 from .protocol import CliAgent, ToolInfo
-from .spec import AgentSpec
 
 __version__ = "0.0.4"
 
 __all__ = [
-    "AgentSpec",
     "CliAgent",
     "CliConfig",
     "ToolInfo",
@@ -49,7 +47,6 @@ __all__ = [
     "Separator",
     "adapt",
     "demo_agent",
-    "from_openai",
     "from_smolagents",
     "from_callable",
     "__version__",
