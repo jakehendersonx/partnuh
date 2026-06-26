@@ -21,7 +21,7 @@ from .events import Done, Error, Event, TextDelta, ToolCallStarted, ToolResult, 
 from .protocol import CliAgent, ToolInfo
 from .spec import AgentSpec
 
-__version__ = "0.1.0"
+__version__ = "0.0.1"
 
 __all__ = [
     "AgentSpec",
