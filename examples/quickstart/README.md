@@ -1,4 +1,4 @@
-# basic_agent
+# quickstart
 
 The simplest partnuh starter: a [smolagents](https://github.com/huggingface/smolagents)
 tool-calling agent running in partnuh's streaming terminal CLI.
@@ -10,7 +10,7 @@ only the aesthetic layer; there's no partnuh-specific agent type to learn.
 ## Setup
 
 ```bash
-cd examples/basic_agent
+cd examples/quickstart
 
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
@@ -28,7 +28,7 @@ Get an OpenRouter key at https://openrouter.ai/keys.
 ```
 
 In the REPL: **Enter** submits, **Shift+Enter** adds a newline. Commands:
-`/tools`, `/reset`, `/help`, `/quit`.
+`/tools`, `/clear`, `/help`, `/quit`.
 
 ## Verify it works
 

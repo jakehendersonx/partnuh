@@ -53,7 +53,7 @@ class CommandDispatcher:
             "quit": self._quit,
             "exit": self._quit,
             "tools": self._tools,
-            "reset": self._reset,
+            "clear": self._clear,
         }
         for name, fn in (config.commands or {}).items():
             self.commands[name.lstrip("/")] = fn
@@ -80,7 +80,7 @@ class CommandDispatcher:
         a = self.config.accent_style
         console.print()
         console.print(f"[{a}]/tools[/{a}] — list available tools")
-        console.print(f"[{a}]/reset[/{a}] — clear conversation history")
+        console.print(f"[{a}]/clear[/{a}] — clear conversation history")
         for name in (self.config.commands or {}):
             console.print(f"[{a}]/{name.lstrip('/')}[/{a}] — (custom)")
         console.print(f"[{a}]/help[/{a}]  — show commands")
@@ -91,13 +91,13 @@ class CommandDispatcher:
     def _quit(self, _disp, _args) -> CommandResult:
         return CommandResult(handled=True, should_exit=True)
 
-    def _reset(self, _disp, _args) -> CommandResult:
+    def _clear(self, _disp, _args) -> CommandResult:
         reset = getattr(self.agent, "reset", None)
         if callable(reset):
             reset(self.session_id)
-            console.print("[green]✓[/green] conversation reset\n")
+            console.print("[green]✓[/green] conversation cleared\n")
         else:
-            console.print("[yellow]This agent doesn't support reset.[/yellow]\n")
+            console.print("[yellow]This agent can't clear its history.[/yellow]\n")
         return CommandResult(handled=True)
 
     def _tools(self, _disp, _args) -> CommandResult:
