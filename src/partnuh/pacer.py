@@ -41,6 +41,9 @@ class Pacer:
         tool_call_prefix: str = "⚙ ",
         tool_result_prefix: str = "→ ",
         tool_style: str = "dim",
+        answering_spinner: Optional[str] = None,
+        answering_text: str = "Working...",
+        spinner_style: str = "dim",
     ):
         self.console = console
         self.delay = max(0.0, delay)
@@ -48,6 +51,9 @@ class Pacer:
         self.tool_call_prefix = tool_call_prefix
         self.tool_result_prefix = tool_result_prefix
         self.tool_style = tool_style
+        self.answering_spinner = answering_spinner
+        self.answering_text = answering_text
+        self.spinner_style = spinner_style
 
     def _write_text(self, text: str) -> None:
         if self.delay <= 0:
@@ -59,12 +65,26 @@ class Pacer:
             sys.stdout.flush()
             time.sleep(self.delay)
 
+    def _next(self, it, after_tool: bool):
+        """Pull the next event; show the answering spinner if the agent is now
+        working after a tool step (and we're between printed lines)."""
+        if after_tool and self.answering_spinner:
+            with self.console.status(self.answering_text, spinner=self.answering_spinner,
+                                     spinner_style=self.spinner_style):
+                return next(it)
+        return next(it)
+
     def render(self, events: Iterable[Union[Event, str]]) -> bool:
         """Render the stream. Returns True if any text was printed."""
         printed = False
         st = self.tool_style
-        for raw in events:
-            ev = normalize(raw)
+        it = iter(events)
+        prev = None
+        while True:
+            try:
+                ev = normalize(self._next(it, isinstance(prev, (ToolCallStarted, ToolResult))))
+            except StopIteration:
+                break
             if isinstance(ev, TextDelta):
                 if ev.text:
                     printed = True
@@ -84,4 +104,5 @@ class Pacer:
                 self.console.print(Text(f"\nError: {ev.message}", style="red"))
             elif isinstance(ev, Done):
                 pass
+            prev = ev
         return printed

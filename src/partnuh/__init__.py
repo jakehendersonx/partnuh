@@ -19,6 +19,7 @@ from .adapters import from_callable, from_openai, from_smolagents
 from .cli import Cli, wrap
 from .config import CliConfig
 from .events import Done, Error, Event, TextDelta, ToolCallStarted, ToolResult, normalize
+from .presets import Box, Cursor, Prompt, Separator, Spinner
 from .protocol import CliAgent, ToolInfo
 from .spec import AgentSpec
 
@@ -38,6 +39,11 @@ __all__ = [
     "normalize",
     "wrap",
     "Cli",
+    "Prompt",
+    "Cursor",
+    "Spinner",
+    "Box",
+    "Separator",
     "adapt",
     "from_openai",
     "from_smolagents",

@@ -69,7 +69,7 @@ partnuh.wrap(agent, name="Private Caller")   # auto-wrapped + launched; that's i
 are present). Tune the look with any `CliConfig` field as a keyword override:
 
 ```python
-partnuh.wrap(agent, name="Private Caller", prompt_str="❯ ", stream_speed=0.3)
+partnuh.wrap(agent, name="Private Caller", prompt_sequence="❯ ", stream_speed=0.3)
 ```
 
 Want the object without launching (to embed or test)? Use `partnuh.Cli(...)` and
@@ -106,25 +106,39 @@ partnuh.wrap(agent)
 ## Configuring the look & feel
 
 Every appearance knob lives on `CliConfig`. Pass individual fields straight to
-`wrap()` (they override the defaults), or build a whole `CliConfig`:
+`wrap()` (they override the defaults), or build a whole `CliConfig`. Many fields
+have named presets (`partnuh.Prompt`, `Cursor`, `Spinner`, `Box`, `Separator`)
+for discoverability — but any equivalent string works too.
 
 ```python
+import partnuh
+from partnuh import Prompt, Cursor, Spinner, Box, Separator
+
 partnuh.wrap(
     agent,
     name="Private Caller",
-    # prompt & appearance
-    prompt_str="❯ ",            # the leading character(s)            (default "▌ ")
-    prompt_style="fg:#888888",  # prompt_toolkit style for the prompt
-    cursor_shape="beam",        # block | beam | underline | blinking-* | None
-    banner=True,                # startup info panel
-    show_dividers=True,         # dashed rule around each response
-    # input
-    newline_keys=("s-enter", "c-enter", "a-enter", "c-j"),  # keys that insert a newline
+    # prompt & input appearance
+    prompt_sequence=Prompt.ARROW,   # leading sequence "❯ " (default Prompt.BAR "▌ ")
+    prompt_style="fg:#888888",      # prompt_toolkit style for the prompt
+    cursor=Cursor.BEAM,             # block | beam | underline | blinking-* | None
+    accent_style="cyan",            # color of /commands & special keywords
+    # banner box
+    banner=True,
+    banner_border_style="dim",      # outline color
+    banner_box=Box.ROUNDED,         # outline texture (square/double/heavy/ascii/...)
+    # separator around each response
+    show_dividers=True,
+    separator=Separator.DASH,       # repeated to fill width ("─", "━", "=", ...)
+    separator_style="dim",
+    # input keys
+    newline_keys=("s-enter", "c-enter", "a-enter", "c-j"),
     # streaming
-    stream_speed=0.0,           # 0 = as-fast-as-tokens-arrive; 1.0 = slow typewriter
-    token_delay=None,           # explicit seconds/char; overrides stream_speed when set
-    # spinner (until the first token)
-    spinner="dots", spinner_text="Thinking...", spinner_style="dim",
+    stream_speed=0.0,               # 0 = as-fast-as-tokens; 1.0 = slow typewriter
+    token_delay=None,               # explicit seconds/char; overrides stream_speed
+    # spinners
+    thinking_spinner=Spinner.DOTS, thinking_text="Thinking...",   # until first token
+    answering_spinner=Spinner.DOTS, answering_text="Working...",  # while a tool runs / next step
+    spinner_style="dim",
     # tool-call markers
     show_tool_calls=True, tool_call_prefix="⚙ ", tool_result_prefix="→ ", tool_style="dim",
     # extra slash commands

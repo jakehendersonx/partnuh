@@ -1,6 +1,6 @@
 """The REPL: read multi-line input, stream the agent's reply, loop.
 
-`run(agent)` is the one-call entry point. It runs interactively, or one-shot if
+`wrap(agent)` is the one-call entry point. It runs interactively, or one-shot if
 command-line args (or an explicit prompt) are given.
 """
 
@@ -13,7 +13,9 @@ import sys
 from dataclasses import dataclass, replace
 from typing import Callable, Dict, List, Optional
 
+import rich.box as rich_box
 from rich.console import Console
+from rich.text import Text
 
 from prompt_toolkit.completion import FuzzyCompleter, NestedCompleter
 from prompt_toolkit.cursor_shapes import CursorShape
@@ -75,13 +77,14 @@ class CommandDispatcher:
         return CommandResult(should_process=True)
 
     def _help(self, _disp, _args) -> CommandResult:
+        a = self.config.accent_style
         console.print()
-        console.print("[#888888]/tools[/#888888] — list available tools")
-        console.print("[#888888]/reset[/#888888] — clear conversation history")
+        console.print(f"[{a}]/tools[/{a}] — list available tools")
+        console.print(f"[{a}]/reset[/{a}] — clear conversation history")
         for name in (self.config.commands or {}):
-            console.print(f"[#888888]/{name.lstrip('/')}[/#888888] — (custom)")
-        console.print("[#888888]/help[/#888888]  — show commands")
-        console.print("[#888888]/quit[/#888888]  — exit")
+            console.print(f"[{a}]/{name.lstrip('/')}[/{a}] — (custom)")
+        console.print(f"[{a}]/help[/{a}]  — show commands")
+        console.print(f"[{a}]/quit[/{a}]  — exit")
         console.print()
         return CommandResult(handled=True)
 
@@ -102,7 +105,8 @@ class CommandDispatcher:
         if not tools:
             console.print("[yellow]No tools configured (chat-only).[/yellow]\n")
             return CommandResult(handled=True)
-        console.print("\n[bold cyan]Available Tools:[/bold cyan]\n")
+        a = self.config.accent_style
+        console.print(f"\n[bold {a}]Available Tools:[/bold {a}]\n")
         for tool in tools:
             name = getattr(tool, "name", None) or str(tool)
             desc = (getattr(tool, "description", "") or "").strip().split("\n\n", 1)[0]
@@ -117,20 +121,43 @@ class CommandDispatcher:
 # Display
 # ---------------------------------------------------------------------------
 
-def display_banner(agent: CliAgent) -> None:
+_BOXES = {
+    "rounded": rich_box.ROUNDED,
+    "square": rich_box.SQUARE,
+    "double": rich_box.DOUBLE,
+    "heavy": rich_box.HEAVY,
+    "ascii": rich_box.ASCII,
+    "minimal": rich_box.MINIMAL,
+    "simple": rich_box.SIMPLE,
+    "horizontals": rich_box.HORIZONTALS,
+    "none": rich_box.MINIMAL,
+}
+
+
+def display_banner(agent: CliAgent, config: CliConfig) -> None:
     from rich.panel import Panel
 
-    n_tools = len(getattr(agent, "tools", []) or [])
+    tools = list(getattr(agent, "tools", []) or [])
+    tool_names = ", ".join(getattr(t, "name", "?") for t in tools) if tools else "none (chat-only)"
     content = (
-        f"[dim]agent:[/dim] {getattr(agent, 'name', 'agent')}\n"
+        f"[dim]name:[/dim] {getattr(agent, 'name', 'agent')}\n"
         f"[dim]model:[/dim] {getattr(agent, 'model', '?')}\n"
-        f"[dim]tools:[/dim] {n_tools or 'none (chat-only)'}\n"
+        f"[dim]tools:[/dim] {tool_names}\n"
         f"[dim]directory:[/dim] {os.getcwd()}"
     )
     visible = content.replace("[dim]", "").replace("[/dim]", "")
     width = min(max(max(len(l) for l in visible.splitlines()) + 4, 50), 120)
+    box = _BOXES.get(config.banner_box, rich_box.ROUNDED)
     console.print()
-    console.print(Panel(content, border_style="dim", width=width))
+    console.print(Panel(content, border_style=config.banner_border_style, box=box, width=width))
+
+
+def _separator_line(config: CliConfig) -> Text:
+    """The divider drawn around a response, filled with config.separator."""
+    width = min(shutil.get_terminal_size(fallback=(80, 20)).columns, 120)
+    unit = config.separator or "-"
+    line = (unit * (width // len(unit) + 1))[:width]
+    return Text(line, style=config.separator_style)
 
 
 def stream_response(agent: CliAgent, prompt: str, session_id: str, config: CliConfig) -> None:
@@ -141,12 +168,15 @@ def stream_response(agent: CliAgent, prompt: str, session_id: str, config: CliCo
         tool_call_prefix=config.tool_call_prefix,
         tool_result_prefix=config.tool_result_prefix,
         tool_style=config.tool_style,
+        answering_spinner=config.answering_spinner,
+        answering_text=config.answering_text,
+        spinner_style=config.spinner_style,
     )
     try:
         events = agent.stream(prompt, session_id)
         first = None
-        status = f"[{config.spinner_style}]{config.spinner_text}[/{config.spinner_style}]"
-        with console.status(status, spinner=config.spinner, spinner_style=config.spinner_style):
+        with console.status(config.thinking_text, spinner=config.thinking_spinner,
+                            spinner_style=config.spinner_style):
             for ev in events:
                 first = ev
                 break
@@ -155,7 +185,7 @@ def stream_response(agent: CliAgent, prompt: str, session_id: str, config: CliCo
             return
         pacer.render(itertools.chain([first], events))
     except Exception as e:  # noqa: BLE001 - surface any adapter error to the user
-        console.print(f"\n[red]Error: {e}[/red]")
+        console.print(Text(f"\nError: {e}", style="red"))
         return
     console.print("\n")
 
@@ -179,7 +209,7 @@ def _interactive(agent, config: CliConfig, session_id: str) -> None:
     dispatcher = CommandDispatcher(agent, config, session_id)
 
     if config.banner:
-        display_banner(agent)
+        display_banner(agent, config)
     dispatcher._help(None, None)
 
     try:
@@ -215,14 +245,12 @@ def _interactive(agent, config: CliConfig, session_id: str) -> None:
             if result.handled and not result.should_process:
                 continue
             if result.should_process:
-                if config.show_dividers:
-                    width = shutil.get_terminal_size(fallback=(80, 20)).columns
-                    rule = "[dim]" + "-" * min(width, 120) + "[/dim]"
+                rule = _separator_line(config) if config.show_dividers else None
+                if rule is not None:
                     console.print(rule)
-                    stream_response(agent, text, session_id, config)
+                stream_response(agent, text, session_id, config)
+                if rule is not None:
                     console.print(rule)
-                else:
-                    stream_response(agent, text, session_id, config)
     except KeyboardInterrupt:
         pass
 

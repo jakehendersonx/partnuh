@@ -2,7 +2,14 @@
 
 Every field has a sensible default (the look partnuh ships with). Pass a
 CliConfig to `wrap(..., config=...)`, or override individual fields as keyword
-args: `partnuh.wrap(agent, prompt_str="❯ ", stream_speed=0.3)`.
+args: `partnuh.wrap(agent, prompt_sequence="❯ ", stream_speed=0.3)`.
+
+Many fields accept a `presets` constant (Prompt, Cursor, Spinner, Box,
+Separator) for discoverability, but any equivalent string works too.
+
+Note on style strings: `prompt_style` uses prompt_toolkit syntax ("fg:#888888");
+all other *_style fields are rendered by rich, so they use rich syntax
+("cyan", "dim", "bold #00afff").
 """
 
 from __future__ import annotations
@@ -10,19 +17,28 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional, Tuple
 
+from .presets import Box, Cursor, Prompt, Separator, Spinner
+
 
 @dataclass
 class CliConfig:
-    # --- prompt & appearance ------------------------------------------------
-    prompt_str: str = "▌ "                 # the leading character(s) before your input
-    prompt_style: str = "fg:#888888"       # prompt_toolkit style for the prompt
-    cursor_shape: Optional[str] = None     # "block" | "beam" | "underline" |
-    #                                        "blinking-block" | "blinking-beam" |
-    #                                        "blinking-underline" | None (terminal default)
-    banner: bool = True                    # show the startup info panel
-    show_dividers: bool = True             # the dashed rule around each response
+    # --- prompt & input appearance ------------------------------------------
+    prompt_sequence: str = Prompt.BAR          # leading sequence before your input
+    prompt_style: str = "fg:#888888"           # prompt_toolkit style for the prompt
+    cursor: Optional[str] = None               # Cursor.* or None (terminal default)
+    accent_style: str = "cyan"                 # color of /commands & special keywords
 
-    # --- input --------------------------------------------------------------
+    # --- banner box ---------------------------------------------------------
+    banner: bool = True
+    banner_border_style: str = "dim"           # outline color
+    banner_box: str = Box.ROUNDED              # outline texture
+
+    # --- response separator -------------------------------------------------
+    show_dividers: bool = True
+    separator: str = Separator.DASH            # repeated to fill the width
+    separator_style: str = "dim"
+
+    # --- input keys ---------------------------------------------------------
     multiline: bool = True
     newline_keys: Tuple[str, ...] = ("s-enter", "c-enter", "a-enter", "c-j")
 
@@ -32,9 +48,11 @@ class CliConfig:
     stream_speed: float = 0.0
     token_delay: Optional[float] = None
 
-    # --- spinner (shown until the first token arrives) ----------------------
-    spinner: str = "dots"
-    spinner_text: str = "Thinking..."
+    # --- spinners -----------------------------------------------------------
+    thinking_spinner: str = Spinner.DOTS       # shown until the first token arrives
+    thinking_text: str = "Thinking..."
+    answering_spinner: Optional[str] = Spinner.DOTS  # shown while a tool runs / next step composes
+    answering_text: str = "Working..."
     spinner_style: str = "dim"
 
     # --- tool-call rendering ------------------------------------------------
