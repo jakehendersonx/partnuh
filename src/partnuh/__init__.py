@@ -1,15 +1,17 @@
 """partnuh — a streaming terminal REPL for any agent.
 
+Build your agent however you like, then hand it to ``wrap`` — one line, you get
+a full streaming CLI. partnuh is purely the aesthetic layer; it imports no agent
+framework of its own.
+
     import partnuh
+    from smolagents import ToolCallingAgent, OpenAIServerModel
 
-    agent = partnuh.AgentSpec(name="Private Caller", model="openai/gpt-5.4-nano").build()
-    partnuh.run(agent)
+    agent = ToolCallingAgent(tools=[...], model=OpenAIServerModel(...))
+    partnuh.wrap(agent, name="Private Caller")
 
-Or wrap an existing agent:
-
-    from smolagents import ToolCallingAgent
-    agent = partnuh.from_smolagents(my_smol_agent, name="Private Caller")
-    partnuh.run(agent)
+No API key handy? `partnuh.wrap(partnuh.demo_agent())` streams a canned reply
+with no model or network.
 """
 
 from __future__ import annotations

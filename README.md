@@ -170,6 +170,44 @@ adding a newline). `partnuh` registers every known Shift+Enter escape sequence
 (`\x1b[27;2;13~`, kitty's `\x1b[13;2u`, …) and maps it to "insert newline" — no
 terminal config required.
 
+## Public API
+
+Everything below is importable from the top level (`import partnuh`):
+
+**Run a CLI**
+- `wrap(agent, *, name=None, model=None, config=None, **overrides)` — wrap any
+  agent and launch the REPL (one-shot if a `prompt`/CLI args are present). The
+  one-liner; `**overrides` are `CliConfig` fields.
+- `Cli(agent, ...)` — the CLI object. Construct it without launching, then
+  `.start()` (or `.interactive()` / `.once(prompt)`).
+- `CliConfig(...)` — the settings object: all look-&-feel state. See
+  *Configuring the look & feel* above.
+
+**Get an agent in**
+- `demo_agent(script=None, *, name="Demo", echo_prompt=False)` — a deterministic,
+  key-less agent (streams Hamlet by default). Great for trying the CLI.
+- `from_smolagents(agent, *, name, model=None)` — wrap a smolagents agent.
+- `from_openai(*, name, model, base_url=None, api_key=None, ...)` — a streaming
+  chat agent over the OpenAI SDK (set `base_url` for OpenRouter).
+- `from_callable(fn, *, name, model="custom", tools=None)` — wrap a
+  `fn(prompt, session_id) -> Iterator[Event | str]`.
+- `AgentSpec(name, model, backend="openrouter", ...)` — optional declarative
+  builder for the OpenAI/OpenRouter chat backend; `.build()` returns a CliAgent.
+- `adapt(agent, *, name=None, model=None)` — coerce any of the above into a
+  CliAgent (what `wrap()` calls for you).
+
+**Implement your own agent**
+- `CliAgent` — the structural type an agent satisfies: `name`, `model`, `tools`,
+  and `stream(prompt, session_id) -> Iterator[Event]`.
+- `ToolInfo(name, description="")` — display metadata for a tool.
+- Events: `Event` (the union), `TextDelta`, `ToolCallStarted`, `ToolResult`,
+  `Error`, `Done`; `normalize()` (coerces a bare `str` to `TextDelta`).
+
+**Presets** — string constants for the config knobs (any equivalent string also
+works): `Prompt`, `Cursor`, `Spinner`, `Box`, `Separator`.
+
+`__version__` — the installed version string.
+
 ## Development
 
 ```bash
