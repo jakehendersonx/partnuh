@@ -30,6 +30,7 @@ openai = ["openai>=1.59.0"]
 smolagents = ["smolagents>=1.20.0"]
 dotenv = ["python-dotenv>=1.0.0"]
 all = ["openai>=1.59.0", "smolagents>=1.20.0", "python-dotenv>=1.0.0"]
+dev = ["pytest>=7.0"]
 
 [project.scripts]
 partnuh = "partnuh.__main__:main"
@@ -40,3 +41,6 @@ Repository = "https://github.com/jakehendersonx/partnuh"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/partnuh"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

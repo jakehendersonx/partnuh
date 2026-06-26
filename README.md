@@ -169,6 +169,22 @@ adding a newline). `partnuh` registers every known Shift+Enter escape sequence
 (`\x1b[27;2;13~`, kitty's `\x1b[13;2u`, …) and maps it to "insert newline" — no
 terminal config required.
 
+## Development
+
+```bash
+pip install -e ".[dev]"
+pytest                       # or: python tests/test_smoke.py
+```
+
+Tests cover the wiring that's easy to break: the unit tests (`tests/test_unit.py`)
+check agent adaptation, config merging, presets, and pacer rendering; the smoke
+tests (`tests/test_smoke.py`) drive the interactive REPL *headlessly* (via a
+prompt_toolkit pipe input) so a renamed config field fails in CI, not in front
+of a user.
+
+CI runs the suite on every push (Python 3.11–3.13), and merging to `main`
+requires the `ci` check to pass. Run `pytest` before publishing.
+
 ## License
 
 MIT
