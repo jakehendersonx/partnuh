@@ -4,8 +4,8 @@ The simplest partnuh starter: a [smolagents](https://github.com/huggingface/smol
 tool-calling agent running in partnuh's streaming terminal CLI.
 
 `main.py` builds the agent the normal smolagents way and hands it to
-`partnuh.run()`. partnuh is only the aesthetic layer — it auto-wraps the agent;
-there's no partnuh-specific agent type to learn.
+`partnuh.wrap(agent).run()`. partnuh is only the aesthetic layer — it auto-wraps
+the agent; there's no partnuh-specific agent type to learn.
 
 ## Setup
 

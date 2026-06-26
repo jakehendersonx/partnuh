@@ -12,7 +12,7 @@ import partnuh
 from smolagents import ToolCallingAgent, OpenAIServerModel
 
 agent = ToolCallingAgent(tools=[...], model=OpenAIServerModel(...))  # your agent
-partnuh.run(agent, name="Private Caller")                            # partnuh makes it pretty
+partnuh.wrap(agent, name="Private Caller").run()                     # one line → a full CLI
 ```
 
 ## Run the example locally (from a checkout)
@@ -62,8 +62,17 @@ model = OpenAIServerModel(model_id="openai/gpt-5.4-nano",
                           api_key=os.environ["OPENROUTER_API_KEY"])
 agent = ToolCallingAgent(tools=[add], model=model, stream_outputs=True)
 
-partnuh.run(agent, name="Private Caller")   # auto-wrapped; no partnuh agent type to learn
+partnuh.wrap(agent, name="Private Caller").run()   # auto-wrapped; no partnuh agent type to learn
 ```
+
+`wrap()` returns a configurable `Cli`; `.run()` launches it. Configure it with
+`CliConfig` fields as keyword overrides:
+
+```python
+partnuh.wrap(agent, name="Private Caller", prompt_str="❯ ", stream_speed=0.3).run()
+```
+
+(`partnuh.run(agent, ...)` is shorthand for `wrap(agent, ...).run()`.)
 
 **Anything is an agent** — a generator function is enough (no key, no framework):
 
@@ -75,7 +84,7 @@ def echo(prompt, session_id):
     for word in f"you said: {prompt}".split(" "):
         yield TextDelta(word + " ")
 
-partnuh.run(echo, name="Echo")
+partnuh.wrap(echo, name="Echo").run()
 ```
 
 **Optional sugar:** for the no-framework chat case there's `AgentSpec`, a thin
@@ -84,7 +93,7 @@ doesn't need it.
 
 ```python
 agent = partnuh.AgentSpec(name="Private Caller", model="openai/gpt-5.4-nano").build()
-partnuh.run(agent)
+partnuh.wrap(agent).run()
 ```
 
 ## In the REPL

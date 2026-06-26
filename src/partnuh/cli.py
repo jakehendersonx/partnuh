@@ -10,7 +10,7 @@ import itertools
 import os
 import shutil
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Callable, Dict, List, Optional
 
 from rich.console import Console
@@ -152,13 +152,11 @@ def stream_response(agent: CliAgent, prompt: str, session_id: str, config: CliCo
 
 
 # ---------------------------------------------------------------------------
-# Entry points
+# The wrapped CLI
 # ---------------------------------------------------------------------------
 
-def run_interactive(agent, session_id: str = "main_session", config: Optional[CliConfig] = None,
-                    name: Optional[str] = None, model: Optional[str] = None) -> None:
-    config = config or CliConfig()
-    agent = adapt(agent, name=name, model=model)
+def _interactive(agent, config: CliConfig, session_id: str) -> None:
+    """The REPL loop. `agent` is assumed already adapted to a CliAgent."""
     dispatcher = CommandDispatcher(agent, config, session_id)
 
     if config.banner:
@@ -206,26 +204,73 @@ def run_interactive(agent, session_id: str = "main_session", config: Optional[Cl
         pass
 
 
-def run_once(agent, prompt: str, session_id: str = "main_session", config: Optional[CliConfig] = None,
-             name: Optional[str] = None, model: Optional[str] = None) -> None:
-    agent = adapt(agent, name=name, model=model)
-    stream_response(agent, prompt, session_id, config or CliConfig())
+class Cli:
+    """A partnuh CLI wrapped around an agent. Configure it, then `.run()`.
 
+        partnuh.wrap(agent).run()
+        partnuh.wrap(agent, prompt_str="❯ ", stream_speed=0.3).run()
+
+    `wrap()` accepts a `config=CliConfig(...)` and/or individual CliConfig
+    overrides as keyword args (e.g. prompt_str=, stream_speed=, banner=).
+    """
+
+    def __init__(self, agent, *, name: Optional[str] = None, model: Optional[str] = None,
+                 config: Optional[CliConfig] = None, **overrides):
+        self.agent = adapt(agent, name=name, model=model)
+        base = config or CliConfig()
+        self.config = replace(base, **overrides) if overrides else base
+
+    def run_interactive(self, session_id: str = "main_session") -> "Cli":
+        _interactive(self.agent, self.config, session_id)
+        return self
+
+    def run_once(self, prompt: str, session_id: str = "main_session") -> "Cli":
+        stream_response(self.agent, prompt, session_id, self.config)
+        return self
+
+    def run(self, args: Optional[List[str]] = None, prompt: Optional[str] = None,
+            session_id: str = "main_session") -> "Cli":
+        """One-shot if `prompt`/`args` given, else interactive."""
+        if args is None:
+            args = sys.argv[1:]
+        try:
+            if prompt is not None:
+                self.run_once(prompt, session_id)
+            elif args:
+                self.run_once(" ".join(args), session_id)
+            else:
+                self.run_interactive(session_id)
+        except KeyboardInterrupt:
+            sys.exit(130)
+        return self
+
+
+def wrap(agent, *, name: Optional[str] = None, model: Optional[str] = None,
+         config: Optional[CliConfig] = None, **overrides) -> Cli:
+    """Wrap any agent in a partnuh CLI. Returns a Cli; call `.run()` to launch.
+
+    The agent is auto-wrapped (an existing CliAgent, a smolagents agent, or a
+    stream function). Pass `name`/`model` to label the banner, and any CliConfig
+    fields as keyword overrides.
+    """
+    return Cli(agent, name=name, model=model, config=config, **overrides)
+
+
+# ---------------------------------------------------------------------------
+# Module-level convenience (thin delegators over Cli)
+# ---------------------------------------------------------------------------
 
 def run(agent, config: Optional[CliConfig] = None, args: Optional[List[str]] = None, prompt: Optional[str] = None,
         name: Optional[str] = None, model: Optional[str] = None) -> None:
-    """Run the CLI for any supported agent. One-shot if `prompt`/`args` given,
-    else interactive. The agent is auto-wrapped (CliAgent / smolagents / a stream
-    function); pass `name`/`model` to label it in the banner."""
-    config = config or CliConfig()
-    if args is None:
-        args = sys.argv[1:]
-    try:
-        if prompt is not None:
-            run_once(agent, prompt, config=config, name=name, model=model)
-        elif args:
-            run_once(agent, " ".join(args), config=config, name=name, model=model)
-        else:
-            run_interactive(agent, config=config, name=name, model=model)
-    except KeyboardInterrupt:
-        sys.exit(130)
+    """Shorthand for `wrap(agent, ...).run(...)`."""
+    Cli(agent, name=name, model=model, config=config).run(args=args, prompt=prompt)
+
+
+def run_once(agent, prompt: str, session_id: str = "main_session", config: Optional[CliConfig] = None,
+             name: Optional[str] = None, model: Optional[str] = None) -> None:
+    Cli(agent, name=name, model=model, config=config).run_once(prompt, session_id)
+
+
+def run_interactive(agent, session_id: str = "main_session", config: Optional[CliConfig] = None,
+                    name: Optional[str] = None, model: Optional[str] = None) -> None:
+    Cli(agent, name=name, model=model, config=config).run_interactive(session_id)

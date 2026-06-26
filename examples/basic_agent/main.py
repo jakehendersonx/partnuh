@@ -35,6 +35,6 @@ model = OpenAIServerModel(
 agent = ToolCallingAgent(tools=[add], model=model, stream_outputs=True, max_steps=4)
 
 
-# Hand it to partnuh — it auto-wraps and runs the streaming REPL.
+# Hand it to partnuh — wrap it in a CLI, then run the streaming REPL.
 if __name__ == "__main__":
-    partnuh.run(agent, name="Basic Agent")
+    partnuh.wrap(agent, name="Basic Agent").run()
