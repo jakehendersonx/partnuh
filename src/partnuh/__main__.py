@@ -24,13 +24,17 @@ def main() -> None:
     except Exception:
         pass
 
+    from .cli import wrap
+
     if not os.environ.get("OPENROUTER_API_KEY"):
-        print("Error: OPENROUTER_API_KEY not set.", file=sys.stderr)
-        print("  export OPENROUTER_API_KEY=sk-or-...", file=sys.stderr)
-        sys.exit(1)
+        # No key? Run the offline demo agent so `partnuh` still does something.
+        print("No OPENROUTER_API_KEY set — running the offline demo agent.", file=sys.stderr)
+        from .demo import demo_agent
+
+        wrap(demo_agent(name="partnuh demo"))
+        return
 
     from .spec import AgentSpec
-    from .cli import wrap
 
     model = os.environ.get("PARTNUH_MODEL", "openai/gpt-5.4-nano")
     agent = AgentSpec(name="partnuh", model=model, backend="openrouter").build()

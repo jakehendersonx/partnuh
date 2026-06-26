@@ -138,6 +138,24 @@ def test_agentspec_build():
     assert a.model == "openai/gpt-5.4-nano"
 
 
+# --- demo agent ------------------------------------------------------------
+
+def test_demo_agent_is_deterministic():
+    agent = partnuh.demo_agent(name="Demo")
+    out1 = "".join(e.text for e in agent.stream("anything", "s1"))
+    out2 = "".join(e.text for e in agent.stream("something else", "s2"))
+    assert out1 == out2                      # ignores the prompt — fully deterministic
+    assert "To be, or not to be" in out1
+    assert "\n" in out1                      # line breaks preserved
+
+
+def test_demo_agent_custom_script_and_echo():
+    agent = partnuh.demo_agent("hello world", name="Echo", echo_prompt=True)
+    out = "".join(e.text for e in agent.stream("hi there", "s"))
+    assert "You said: hi there" in out
+    assert out.rstrip().endswith("hello world")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     for fn in fns:
