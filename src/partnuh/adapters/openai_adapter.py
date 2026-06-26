@@ -34,7 +34,16 @@ class OpenAIChatAgent:
         self.tools: Sequence[ToolInfo] = list(tools or [])
         self._temperature = temperature
         self._system = system_prompt or "You are a helpful, concise assistant."
-        if client is None:
+        # The client is built lazily on first stream() — so just constructing an
+        # agent (e.g. AgentSpec(...).build()) never needs credentials.
+        self._client = client
+        self._api_key = api_key
+        self._base_url = base_url
+        self._headers = headers
+        self._history: Dict[str, List[Dict[str, str]]] = {}
+
+    def _ensure_client(self):
+        if self._client is None:
             try:
                 from openai import OpenAI
             except ImportError as e:  # pragma: no cover
@@ -43,13 +52,12 @@ class OpenAIChatAgent:
                     'Install it with: pip install "partnuh[openai]"'
                 ) from e
 
-            client = OpenAI(
-                api_key=api_key or os.environ.get("OPENAI_API_KEY"),
-                base_url=base_url,
-                default_headers=headers,
+            self._client = OpenAI(
+                api_key=self._api_key or os.environ.get("OPENAI_API_KEY"),
+                base_url=self._base_url,
+                default_headers=self._headers,
             )
-        self._client = client
-        self._history: Dict[str, List[Dict[str, str]]] = {}
+        return self._client
 
     def _messages(self, session_id: str) -> List[Dict[str, str]]:
         if session_id not in self._history:
@@ -62,7 +70,7 @@ class OpenAIChatAgent:
     def stream(self, prompt: str, session_id: str = "main_session") -> Iterator[Event]:
         messages = self._messages(session_id)
         messages.append({"role": "user", "content": prompt})
-        stream = self._client.chat.completions.create(
+        stream = self._ensure_client().chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=self._temperature,
