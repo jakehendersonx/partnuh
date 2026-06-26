@@ -130,6 +130,27 @@ def test_separator_line_uses_config_char():
     assert len(t.plain) > 0
 
 
+# --- banner ----------------------------------------------------------------
+
+def test_banner_renders_with_custom_label_style():
+    import partnuh.cli as climod
+
+    buf = StringIO()
+    old = climod.console
+    climod.console = Console(file=buf, force_terminal=False, width=90)
+    try:
+        class A:
+            name = "N"
+            model = "m"
+            tools = [ToolInfo("add", "x")]
+
+        climod.display_banner(A(), CliConfig(banner_label_style="magenta"))
+    finally:
+        climod.console = old
+    out = buf.getvalue()
+    assert "name:" in out and "tools: add" in out and "directory:" in out
+
+
 # --- AgentSpec (optional sugar) --------------------------------------------
 
 def test_agentspec_build():

@@ -135,18 +135,21 @@ _BOXES = {
 
 
 def display_banner(agent: CliAgent, config: CliConfig) -> None:
+    from rich.markup import escape
     from rich.panel import Panel
 
     tools = list(getattr(agent, "tools", []) or [])
     tool_names = ", ".join(getattr(t, "name", "?") for t in tools) if tools else "none (chat-only)"
-    content = (
-        f"[dim]name:[/dim] {getattr(agent, 'name', 'agent')}\n"
-        f"[dim]model:[/dim] {getattr(agent, 'model', '?')}\n"
-        f"[dim]tools:[/dim] {tool_names}\n"
-        f"[dim]directory:[/dim] {os.getcwd()}"
-    )
-    visible = content.replace("[dim]", "").replace("[/dim]", "")
-    width = min(max(max(len(l) for l in visible.splitlines()) + 4, 50), 120)
+    rows = [
+        ("name", getattr(agent, "name", "agent")),
+        ("model", getattr(agent, "model", "?")),
+        ("tools", tool_names),
+        ("directory", os.getcwd()),
+    ]
+    ls = config.banner_label_style
+    content = "\n".join(f"[{ls}]{label}:[/{ls}] {escape(str(value))}" for label, value in rows)
+    plain = "\n".join(f"{label}: {value}" for label, value in rows)
+    width = min(max(max(len(line) for line in plain.splitlines()) + 4, 50), 120)
     box = _BOXES.get(config.banner_box, rich_box.ROUNDED)
     console.print()
     console.print(Panel(content, border_style=config.banner_border_style, box=box, width=width))
