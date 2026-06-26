@@ -14,6 +14,22 @@ agent = partnuh.AgentSpec(name="Private Caller", model="openai/gpt-5.4-nano").bu
 partnuh.run(agent)
 ```
 
+## Try it instantly (no key, no network)
+
+`examples/fake.py` wraps a made-up agent with `from_callable`, so you can see the
+REPL, streaming, and tool markers without any credentials:
+
+```bash
+python examples/fake.py
+```
+
+For the real examples (`chat.py`, `smol.py`), copy the env template and add your
+key — they auto-load `.env`:
+
+```bash
+cp .env.template .env   # then fill in OPENROUTER_API_KEY
+```
+
 ## Install
 
 ```bash

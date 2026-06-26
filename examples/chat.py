@@ -1,8 +1,17 @@
-"""Simplest partnuh usage: a streaming chat over OpenRouter, no tools.
+"""Simplest real usage: a streaming chat over OpenRouter, no tools.
 
-    export OPENROUTER_API_KEY=sk-or-...
+    cp .env.template .env   # then add your OPENROUTER_API_KEY
     python examples/chat.py
+
+(No key handy? Run examples/fake.py instead — it needs none.)
 """
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()  # picks up .env from the project root
+except ImportError:
+    pass
 
 import partnuh
 
