@@ -43,7 +43,8 @@ def test_adapt_callable():
 
 
 def test_adapt_passthrough():
-    built = partnuh.AgentSpec(name="X", model="m").build()
+    # An object that's already a CliAgent is returned unchanged.
+    built = partnuh.from_callable(_fake, name="X", model="m")
     assert adapt(built) is built
 
 
