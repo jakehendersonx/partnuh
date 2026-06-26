@@ -14,23 +14,33 @@ agent = partnuh.AgentSpec(name="Private Caller", model="openai/gpt-5.4-nano").bu
 partnuh.run(agent)
 ```
 
-## Try it instantly (no key, no network)
+## Run the examples locally (from a checkout)
 
-`examples/fake.py` wraps a made-up agent with `from_callable`, so you can see the
-REPL, streaming, and tool markers without any credentials:
-
-```bash
-python examples/fake.py
-```
-
-For the real examples (`chat.py`, `smol.py`), copy the env template and add your
-key — they auto-load `.env`:
+Install the package into a virtualenv in editable mode, then run an example:
 
 ```bash
-cp .env.template .env   # then fill in OPENROUTER_API_KEY
+cd partnuh
+python3 -m venv .venv
+.venv/bin/pip install -e ".[all]"        # or ".[openai,dotenv]" for the chat examples
+
+.venv/bin/python examples/fake.py            # no key, no network — just the interface
+cp .env.template .env                        # add OPENROUTER_API_KEY for the real ones
+.venv/bin/python examples/private_caller.py  # the full private-caller app, on partnuh
 ```
 
-## Install
+The examples:
+
+| file | needs | shows |
+|---|---|---|
+| `fake.py` | nothing | the REPL/streaming/tool markers with a made-up agent |
+| `chat.py` | `OPENROUTER_API_KEY` | the minimal `AgentSpec` chat |
+| `private_caller.py` | `OPENROUTER_API_KEY` | a complete app (private-caller) rebuilt on partnuh |
+| `smol.py` | `OPENROUTER_API_KEY` + `[smolagents]` | wrapping a tool-calling smolagents agent |
+
+`examples/fake.py` wraps a made-up agent with `from_callable`, so it runs with no
+credentials. The others auto-load `.env`.
+
+## Install (as a dependency)
 
 ```bash
 pip install partnuh                 # core (bring your own agent)
