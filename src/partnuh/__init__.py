@@ -14,6 +14,7 @@ Or wrap an existing agent:
 
 from __future__ import annotations
 
+from .adapt import adapt
 from .adapters import from_callable, from_openai, from_smolagents
 from .cli import run, run_interactive, run_once
 from .config import CliConfig
@@ -38,6 +39,7 @@ __all__ = [
     "run",
     "run_interactive",
     "run_once",
+    "adapt",
     "from_openai",
     "from_smolagents",
     "from_callable",

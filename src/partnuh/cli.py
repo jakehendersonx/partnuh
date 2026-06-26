@@ -20,6 +20,7 @@ from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.shortcuts import PromptSession
 from prompt_toolkit.styles import Style
 
+from .adapt import adapt
 from .config import CliConfig
 from .keymap import build_key_bindings
 from .pacer import Pacer
@@ -154,8 +155,10 @@ def stream_response(agent: CliAgent, prompt: str, session_id: str, config: CliCo
 # Entry points
 # ---------------------------------------------------------------------------
 
-def run_interactive(agent: CliAgent, session_id: str = "main_session", config: Optional[CliConfig] = None) -> None:
+def run_interactive(agent, session_id: str = "main_session", config: Optional[CliConfig] = None,
+                    name: Optional[str] = None, model: Optional[str] = None) -> None:
     config = config or CliConfig()
+    agent = adapt(agent, name=name, model=model)
     dispatcher = CommandDispatcher(agent, config, session_id)
 
     if config.banner:
@@ -203,21 +206,26 @@ def run_interactive(agent: CliAgent, session_id: str = "main_session", config: O
         pass
 
 
-def run_once(agent: CliAgent, prompt: str, session_id: str = "main_session", config: Optional[CliConfig] = None) -> None:
+def run_once(agent, prompt: str, session_id: str = "main_session", config: Optional[CliConfig] = None,
+             name: Optional[str] = None, model: Optional[str] = None) -> None:
+    agent = adapt(agent, name=name, model=model)
     stream_response(agent, prompt, session_id, config or CliConfig())
 
 
-def run(agent: CliAgent, config: Optional[CliConfig] = None, args: Optional[List[str]] = None, prompt: Optional[str] = None) -> None:
-    """Run the CLI. One-shot if `prompt`/`args` given, else interactive."""
+def run(agent, config: Optional[CliConfig] = None, args: Optional[List[str]] = None, prompt: Optional[str] = None,
+        name: Optional[str] = None, model: Optional[str] = None) -> None:
+    """Run the CLI for any supported agent. One-shot if `prompt`/`args` given,
+    else interactive. The agent is auto-wrapped (CliAgent / smolagents / a stream
+    function); pass `name`/`model` to label it in the banner."""
     config = config or CliConfig()
     if args is None:
         args = sys.argv[1:]
     try:
         if prompt is not None:
-            run_once(agent, prompt, config=config)
+            run_once(agent, prompt, config=config, name=name, model=model)
         elif args:
-            run_once(agent, " ".join(args), config=config)
+            run_once(agent, " ".join(args), config=config, name=name, model=model)
         else:
-            run_interactive(agent, config=config)
+            run_interactive(agent, config=config, name=name, model=model)
     except KeyboardInterrupt:
         sys.exit(130)

@@ -2,16 +2,17 @@
 
 **A streaming terminal REPL for any agent.**
 
-`partnuh` gives an existing agent — smolagents, an OpenAI-compatible chat model,
-or anything you can wrap — a fast, multi-line terminal chat with token
-streaming. It doesn't build agents; it gives the one you have a nice place to
-talk.
+`partnuh` is purely aesthetic: it's the fast, multi-line, token-streaming
+terminal REPL. You build your agent with its own dependencies — smolagents, an
+OpenAI-compatible chat model, anything — and hand it to `partnuh.run()`, which
+auto-wraps it. partnuh never builds agents and imports no framework of its own.
 
 ```python
 import partnuh
+from smolagents import ToolCallingAgent, OpenAIServerModel
 
-agent = partnuh.AgentSpec(name="Private Caller", model="openai/gpt-5.4-nano").build()
-partnuh.run(agent)
+agent = ToolCallingAgent(tools=[...], model=OpenAIServerModel(...))  # your agent
+partnuh.run(agent, name="Private Caller")                            # partnuh makes it pretty
 ```
 
 ## Run the example locally (from a checkout)
@@ -22,11 +23,11 @@ Install the package into a virtualenv in editable mode, then run the example —
 ```bash
 cd partnuh
 python3 -m venv .venv
-.venv/bin/pip install -e ".[openai,dotenv]"   # or ".[all]"
-cp .env.template .env                          # add your OPENROUTER_API_KEY
+.venv/bin/pip install -e ".[smolagents,dotenv]"   # or ".[all]"
+cp .env.template .env                              # add your OPENROUTER_API_KEY
 
-.venv/bin/python examples/basic_agent.py            # interactive
-.venv/bin/python examples/basic_agent.py "hello"    # one-shot
+.venv/bin/python examples/basic_agent.py             # interactive
+.venv/bin/python examples/basic_agent.py "21 + 21?"  # one-shot
 ```
 
 It auto-loads `.env`. See the comments in the file for how each part maps to the
@@ -43,20 +44,9 @@ pip install "partnuh[all]"
 
 ## Use
 
-**A chat model over OpenRouter** (no framework):
-
-```python
-import partnuh
-
-agent = partnuh.AgentSpec(
-    name="Private Caller",
-    model="openai/gpt-5.4-nano",     # OpenRouter model id
-    backend="openrouter",            # uses $OPENROUTER_API_KEY
-).build()
-partnuh.run(agent)
-```
-
-**Wrap a smolagents agent** (tool calling works):
+**Bring your own agent.** Build it however you like, then `partnuh.run()` it.
+What you pass is auto-wrapped: an already-`CliAgent`, a smolagents agent, or a
+plain stream function all just work.
 
 ```python
 import os, partnuh
@@ -70,18 +60,31 @@ def add(a: int, b: int) -> int:
 model = OpenAIServerModel(model_id="openai/gpt-5.4-nano",
                           api_base="https://openrouter.ai/api/v1",
                           api_key=os.environ["OPENROUTER_API_KEY"])
-smol = ToolCallingAgent(tools=[add], model=model, stream_outputs=True)
+agent = ToolCallingAgent(tools=[add], model=model, stream_outputs=True)
 
-agent = partnuh.from_smolagents(smol, name="Private Caller")
-partnuh.run(agent)
+partnuh.run(agent, name="Private Caller")   # auto-wrapped; no partnuh agent type to learn
 ```
 
-**Ready-to-run command** (after `pip install "partnuh[openai,dotenv]"`):
+**Anything is an agent** — a generator function is enough (no key, no framework):
 
-```bash
-export OPENROUTER_API_KEY=sk-or-...
-partnuh                       # interactive
-partnuh "what's 2+2?"         # one-shot
+```python
+import partnuh
+from partnuh import TextDelta
+
+def echo(prompt, session_id):
+    for word in f"you said: {prompt}".split(" "):
+        yield TextDelta(word + " ")
+
+partnuh.run(echo, name="Echo")
+```
+
+**Optional sugar:** for the no-framework chat case there's `AgentSpec`, a thin
+helper over the OpenAI/OpenRouter backend. It's convenience only — partnuh
+doesn't need it.
+
+```python
+agent = partnuh.AgentSpec(name="Private Caller", model="openai/gpt-5.4-nano").build()
+partnuh.run(agent)
 ```
 
 ## In the REPL
