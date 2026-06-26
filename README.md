@@ -15,23 +15,23 @@ agent = ToolCallingAgent(tools=[...], model=OpenAIServerModel(...))  # your agen
 partnuh.wrap(agent, name="Private Caller")                           # one line → a full CLI
 ```
 
-## Run the example locally (from a checkout)
+## Examples
 
-Install the package into a virtualenv in editable mode, then run the example —
-`examples/basic_agent.py`, a complete agent CLI in a few lines:
+Each example is a self-contained project (its own `requirements.txt` and
+`README.md`):
+
+| example | shows |
+|---|---|
+| [`examples/basic_agent`](examples/basic_agent) | the simplest starter — a smolagents agent in a partnuh CLI |
+| [`examples/custom_agent`](examples/custom_agent) | the same agent with every look-&-feel knob customized |
 
 ```bash
-cd partnuh
+cd examples/basic_agent
 python3 -m venv .venv
-.venv/bin/pip install -e ".[smolagents,dotenv]"   # or ".[all]"
-cp .env.template .env                              # add your OPENROUTER_API_KEY
-
-.venv/bin/python examples/basic_agent.py             # interactive
-.venv/bin/python examples/basic_agent.py "21 + 21?"  # one-shot
+.venv/bin/pip install -r requirements.txt
+cp .env.template .env            # add your OPENROUTER_API_KEY
+.venv/bin/python main.py
 ```
-
-It auto-loads `.env`. See the comments in the file for how each part maps to the
-library.
 
 ## Install (as a dependency)
 
