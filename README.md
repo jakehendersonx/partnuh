@@ -125,7 +125,8 @@ partnuh.wrap(
     # banner box
     banner=True,
     banner_border_style="dim",      # outline color
-    banner_box=Box.ROUNDED,         # outline texture (square/double/heavy/ascii/...)
+    banner_box=Box.ROUNDED,         # outline texture
+    banner_label_style="hot_pink",  # color of the name:/model:/tools: labels (default "dim") (square/double/heavy/ascii/...)
     # separator around each response
     show_dividers=True,
     separator=Separator.DASH,       # repeated to fill width ("─", "━", "=", ...)

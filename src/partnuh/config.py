@@ -32,6 +32,7 @@ class CliConfig:
     banner: bool = True
     banner_border_style: str = "dim"           # outline color
     banner_box: str = Box.ROUNDED              # outline texture
+    banner_label_style: str = "dim"            # color of the name:/model:/tools: labels
 
     # --- response separator -------------------------------------------------
     show_dividers: bool = True
